@@ -1,0 +1,11 @@
+.DS_Store
+
+secrets/*
+!secrets/.gitkeep
+**/.env
+
+**/*.md
+!README.md
+!USER_DOC.md
+!DEV_DOC.md
+
