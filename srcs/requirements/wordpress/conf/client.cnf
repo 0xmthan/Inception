@@ -1,0 +1,4 @@
+[client]
+# The mariadb client is only used for the readiness check, against a server
+# with MariaDB 11.4's auto-generated self-signed certificate.
+ssl-verify-server-cert = 0

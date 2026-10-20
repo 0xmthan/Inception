@@ -1,0 +1,21 @@
+[mysqld]
+user            = mysql
+datadir         = /var/lib/mysql
+socket          = /run/mysqld/mysqld.sock
+pid-file        = /run/mysqld/mysqld.pid
+
+# re-enable TCP for the wordpress container to connect over the docker network
+skip-networking = 0
+bind-address    = 0.0.0.0
+port            = 3306
+
+
+character-set-server   = utf8mb4
+collation-server       = utf8mb4_unicode_ci
+
+[client]
+socket          = /run/mysqld/mysqld.sock
+# MariaDB 11.4 enables TLS with auto-generated self-signed certificates,
+# which the client would otherwise refuse to verify.
+ssl-verify-server-cert = 0
+default-character-set = utf8mb4
