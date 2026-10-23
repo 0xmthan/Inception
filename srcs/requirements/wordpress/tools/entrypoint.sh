@@ -62,6 +62,18 @@ else
     echo "[wordpress] setup done"
 fi
 
+# redis object cache
+# Only configured when a redis host is provided
+if [ -n "${REDIS_HOST:-}" ] && [ ! -f "$WP_PATH/wp-content/object-cache.php" ]; then
+    echo "[wordpress] enabling the redis object cache on ${REDIS_HOST}"
+    $WP config set WP_REDIS_HOST "$REDIS_HOST"
+    $WP config set WP_REDIS_PORT "${REDIS_PORT:-6379}" --raw
+    $WP config set WP_CACHE true --raw
+    $WP config set WP_REDIS_GRACEFUL true --raw
+    $WP plugin install redis-cache --activate
+    $WP redis enable
+fi
+
 chown -R www-data:www-data "$WP_PATH"
 
 # exec => php-fpm replaces the shell and becomes PID 1.
