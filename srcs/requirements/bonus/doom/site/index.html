@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>DOOM on Inception</title>
+    <style>
+        :root {
+            --bg: #0b0b0b;
+            --fg: #d8d8d8;
+            --muted: #7a7a7a;
+            --red: #c8102e;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background: var(--bg);
+            color: var(--fg);
+            font: 15px/1.5 ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 16px;
+        }
+        .screen {
+            position: relative;
+            width: min(960px, 100%, (100vh - 32px) * 4 / 3);
+            aspect-ratio: 4 / 3;
+            background: #000;
+            border: 1px solid #222;
+        }
+        /* the canvas must not have a border or padding, or mouse coords are off */
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+        }
+        #start {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 0;
+            background: rgba(0, 0, 0, .8);
+            color: var(--fg);
+            font: inherit;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        #start:disabled { cursor: progress; color: var(--muted); }
+        #start:not(:disabled):hover { color: var(--red); }
+    </style>
+</head>
+<body>
+    <div class="screen">
+        <canvas id="canvas" tabindex="-1" oncontextmenu="event.preventDefault()"></canvas>
+        <button id="start" disabled>Loading...</button>
+    </div>
+
+    <script>
+        var startButton = document.getElementById("start");
+        var canvas = document.getElementById("canvas");
+
+        var Module = {
+            canvas: canvas,
+            noInitialRun: true,
+            preRun: function () {
+                Module.FS.createPreloadedFile("", "freedoom1.wad", "freedoom1.wad", true, true);
+                Module.FS.createPreloadedFile("", "default.cfg", "default.cfg", true, true);
+            },
+            onRuntimeInitialized: function () {
+                startButton.disabled = false;
+                startButton.textContent = "Click to start";
+            },
+            print: function (text) { console.log(text); },
+            printErr: function (text) { console.error(text); },
+        };
+
+        // Started on click: browsers only allow sound after a user gesture.
+        startButton.addEventListener("click", function () {
+            startButton.remove();
+            canvas.focus();
+            canvas.requestPointerLock();
+            Module.callMain(["-iwad", "freedoom1.wad", "-window", "-nogui", "-nomusic", "-config", "default.cfg"]);
+        });
+
+        // Re-capture the mouse after Esc released it.
+        canvas.addEventListener("click", function () {
+            if (document.pointerLockElement !== canvas) canvas.requestPointerLock();
+        });
+    </script>
+    <script src="websockets-doom.js"></script>
+</body>
+</html>

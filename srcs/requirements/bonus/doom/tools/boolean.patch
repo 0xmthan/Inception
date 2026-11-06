@@ -1,0 +1,29 @@
+diff --git a/src/doomtype.h b/src/doomtype.h
+index 9947a07..b349fd6 100644
+--- a/src/doomtype.h
++++ b/src/doomtype.h
+@@ -100,7 +100,13 @@
+ 
+ #include <inttypes.h>
+ 
+-#if defined(__cplusplus) || defined(__bool_true_false_are_defined)
++// Only C++ gets the builtin bool. In C, boolean must be the same 4-byte enum
++// in every file: emscripten 4 headers (websocket.h) pull in <stdbool.h>, which
++// used to turn boolean into a 1-byte bool in just those files, so their writes
++// to shared globals (netgame) overwrote the neighbours (deathmatch, ...).
++// Doom also stores -1 in some booleans, which a real bool would turn into 1.
++
++#if defined(__cplusplus)
+ 
+ // Use builtin bool type with C++.
+ 
+@@ -108,6 +114,9 @@ typedef bool boolean;
+ 
+ #else
+ 
++#undef true
++#undef false
++
+ typedef enum 
+ {
+     false, 

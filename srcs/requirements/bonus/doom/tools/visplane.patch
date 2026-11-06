@@ -1,0 +1,67 @@
+diff --git a/src/doom/r_defs.h b/src/doom/r_defs.h
+index d87ca38..5724a6e 100644
+--- a/src/doom/r_defs.h
++++ b/src/doom/r_defs.h
+@@ -428,17 +428,14 @@ typedef struct
+   int			minx;
+   int			maxx;
+   
+-  // leave pads for [minx-1]/[maxx+1]
+-  
+-  byte		pad1;
+-  // Here lies the rub for all
+-  //  dynamic resize/change of resolution.
+-  byte		top[SCREENWIDTH];
+-  byte		pad2;
+-  byte		pad3;
+-  // See above.
+-  byte		bottom[SCREENWIDTH];
+-  byte		pad4;
++  // Room for [minx-1]/[maxx+1]: top/bottom point one byte into these, so
++  // those indexes stay inside the storage. The original pad bytes around
++  // fixed-size arrays were out-of-bounds accesses that clang -O3 optimizes
++  // away, which stopped floors and ceilings from being drawn.
++  byte		top_storage[SCREENWIDTH + 2];
++  byte		bottom_storage[SCREENWIDTH + 2];
++  byte		*top;
++  byte		*bottom;
+ 
+ } visplane_t;
+ 
+diff --git a/src/doom/r_plane.c b/src/doom/r_plane.c
+index 2a7f7bd..baddfc6 100644
+--- a/src/doom/r_plane.c
++++ b/src/doom/r_plane.c
+@@ -93,6 +93,14 @@ fixed_t			cachedystep[SCREENHEIGHT];
+ //
+ void R_InitPlanes (void)
+ {
++    int i;
++
++    for (i = 0; i < MAXVISPLANES; i++)
++    {
++        visplanes[i].top = visplanes[i].top_storage + 1;
++        visplanes[i].bottom = visplanes[i].bottom_storage + 1;
++    }
++
+   // Doh!
+ }
+ 
+@@ -246,7 +254,7 @@ R_FindPlane
+     check->minx = SCREENWIDTH;
+     check->maxx = -1;
+     
+-    memset (check->top,0xff,sizeof(check->top));
++    memset (check->top,0xff,SCREENWIDTH);
+ 		
+     return check;
+ }
+@@ -314,7 +322,7 @@ R_CheckPlane
+     pl->minx = start;
+     pl->maxx = stop;
+ 
+-    memset (pl->top,0xff,sizeof(pl->top));
++    memset (pl->top,0xff,SCREENWIDTH);
+ 		
+     return pl;
+ }
