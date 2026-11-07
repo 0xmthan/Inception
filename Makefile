@@ -1,14 +1,17 @@
 NAME := inception
 COMPOSE	 := docker compose -f srcs/docker-compose.yml
 
+# secrets creates .env, everything else needs it
+ifneq ($(MAKECMDGOALS),secrets)
 include srcs/.env
+endif
 
 all: up
 
-build: dirs
+build: dirs secrets
 	$(COMPOSE) build
 
-up: dirs
+up: dirs secrets
 	$(COMPOSE) up -d --build
 
 down:
@@ -36,6 +39,17 @@ ps status:
 dirs:
 	mkdir -p $(WP_DATA_PATH) $(DB_DATA_PATH)
 
+secrets:
+	@[ -f srcs/.env ] || { cp srcs/.env.example srcs/.env && echo "created srcs/.env, check its paths"; }
+	@mkdir -p secrets
+	@for f in db_password db_root_password ftp_password; do \
+		[ -s secrets/$$f.txt ] || { openssl rand -hex 16 > secrets/$$f.txt && echo "created secrets/$$f.txt"; }; \
+	done
+	@[ -s secrets/credentials.txt ] || { \
+		printf 'WP_ADMIN_PASSWORD=%s\nWP_USER_PASSWORD=%s\n' $$(openssl rand -hex 16) $$(openssl rand -hex 16) \
+			> secrets/credentials.txt && echo "created secrets/credentials.txt"; }
+	@chmod 600 secrets/*.txt
+
 host:
 	grep -q "$(DOMAIN_NAME)" /etc/hosts \
 		|| echo "127.0.0.1 $(DOMAIN_NAME)" | sudo tee -a /etc/hosts
@@ -44,7 +58,7 @@ clean:
 	$(COMPOSE) down -v --remove-orphans
 
 fclean: clean
-	$(COMPOSE) down --rmi local --remove-orphans 2>/dev/null || true
+	$(COMPOSE) down --rmi all --remove-orphans 2>/dev/null || true
 	sudo rm -rf $(WP_DATA_PATH) $(DB_DATA_PATH)
 
 prune: fclean
@@ -55,4 +69,4 @@ srcs/.env:
 	@echo "srcs/.env not found, \"cp srcs/.env.example srcs/.env\" and fill it in"
 	@exit 1
 
-.PHONY: all build up down stop start restart re logs ps status dirs clean fclean prune host
+.PHONY: all build up down stop start restart re logs ps status dirs secrets clean fclean prune host
