@@ -18,6 +18,7 @@ Each service lives in `srcs/requirements/<service>/` with a `Dockerfile`, `conf/
 Main design choices:
 - Every container runs its daemon as PID 1 (`exec`), no `tail -f` / `sleep infinity`.
 - Passwords are passed as Compose secrets (`/run/secrets/*`), never as env vars.
+- MariaDB is initialised with `mariadbd --bootstrap` reading SQL from stdin, so no password is ever written to disk in the container.
 - WordPress waits for MariaDB's healthcheck; all services use `restart: always`.
 - Data lives in two named volumes stored in `/home/mtaheri/data`.
 
@@ -31,7 +32,7 @@ Env vars are visible in `docker inspect`, `/proc/*/environ` and child processes.
 A user-defined bridge network (`inception`) isolates the containers, gives them DNS by service name (`mariadb`, `wordpress`) and only exposes published ports. Host network removes that isolation: every container port is a host port.
 
 ### Docker Volumes vs Bind Mounts
-Volumes are managed by Docker (named, portable, listed in `docker volume ls`). A bind mount maps a host path directly and depends on the host layout. Here, named volumes are used, with their data placed at a fixed host path (`driver_opts: o: bind`).
+Volumes are managed by Docker (named, portable, listed in `docker volume ls`). A bind mount maps a host path directly and depends on the host layout. Here, named volumes are used, with their data placed at a fixed host path (`driver_opts: o: bind`). They are still named volumes, not bind mounts: Docker creates and manages them, they appear in `docker volume ls`, and services refer to them by name (`wordpress`, `mariadb`), never by host path.
 
 ## Instructions
 
@@ -53,7 +54,7 @@ Then open https://mtaheri.42.fr. See [USER_DOC.md](USER_DOC.md) and [DEV_DOC.md]
   [Dockerfile best practices](https://docs.docker.com/build/building/best-practices/)
 - nginx — [documentation](https://nginx.org/en/docs/),
   [ngx_http_ssl_module](https://nginx.org/en/docs/http/ngx_http_ssl_module.html),
-  [ngx_http_fastcgi_module](https://nginx.org/en/docs/http/ngx_http_fastcgi_module.html),
+  [ngx_http_fastcgi_module](https://nginx.org/en/docs/http/ngx_http_fastcgi_module.html)
 - WordPress — [nginx recipe](https://wordpress.org/documentation/article/nginx/),
   [wp-cli commands](https://developer.wordpress.org/cli/commands/)
 - Adminer — [gh releases](https://github.com/vrana/adminer/releases)
@@ -70,4 +71,10 @@ Then open https://mtaheri.42.fr. See [USER_DOC.md](USER_DOC.md) and [DEV_DOC.md]
 
 ### Use of AI
 
-Claude Code was used as a pair-programming assistant on this project. Like drafting documentation and testing endpoints.
+Claude Code was used as an assistant for:
+- **Documentation:** drafting parts of README.md, USER_DOC.md and DEV_DOC.md.
+- **Testing:** checking the HTTPS, WordPress and bonus endpoints.
+- **Review:** comparing the project against the subject's requirements.
+- **Debugging:** helping fix a rendering problem in the bonus DOOM service.
+
+All generated content was reviewed, tested and understood before being kept.

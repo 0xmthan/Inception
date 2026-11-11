@@ -37,6 +37,8 @@ services:
     depends_on:
       mariadb:
         condition: service_healthy
+      redis:
+        condition: service_started
     volumes:
       - wordpress:/var/www/html
     networks:

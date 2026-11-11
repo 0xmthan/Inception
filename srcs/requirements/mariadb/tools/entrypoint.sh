@@ -2,7 +2,6 @@
 set -e
 
 DATADIR="/var/lib/mysql"
-INIT_SQL="/tmp/init.sql"
 
 DB_PASSWORD="$(cat /run/secrets/db_password)"
 DB_ROOT_PASSWORD="$(cat /run/secrets/db_root_password)"
@@ -17,8 +16,9 @@ else
         --skip-test-db \
         --auth-root-authentication-method=normal >/dev/null
 
-    echo "[mariadb] preparing '${MYSQL_DATABASE}' and user '${MYSQL_USER}'"
-    cat > "$INIT_SQL" <<-SQL
+    echo "[mariadb] creating '${MYSQL_DATABASE}' and user '${MYSQL_USER}'"
+    if ! mariadbd --user=mysql --datadir="$DATADIR" --bootstrap >/dev/null <<-SQL
+		FLUSH PRIVILEGES;
 		CREATE DATABASE IF NOT EXISTS \`${MYSQL_DATABASE}\`;
 		CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${DB_PASSWORD}';
 		GRANT ALL PRIVILEGES ON \`${MYSQL_DATABASE}\`.* TO '${MYSQL_USER}'@'%';
@@ -27,19 +27,12 @@ else
 		DELETE FROM mysql.global_priv WHERE User='root' AND Host <> 'localhost';
 		FLUSH PRIVILEGES;
 	SQL
-    chown mysql:mysql "$INIT_SQL"
-    chmod 600 "$INIT_SQL"
-
-    set -- "$@" --init-file="$INIT_SQL"
-
-    # once ping answers the file has been read and can be removed (it holds passwords).
-    (
-        until mariadb-admin --protocol=socket ping --silent >/dev/null 2>&1; do
-            sleep 1
-        done
-        rm -f "$INIT_SQL"
-        echo "[mariadb] removed $INIT_SQL"
-    ) &
+    then
+        echo "[mariadb] initialisation failed, cleaning $DATADIR" >&2
+        rm -rf "${DATADIR:?}"/*
+        exit 1
+    fi
+    echo "[mariadb] initialisation done"
 fi
 
 # exec => mariadbd replaces the shell and becomes PID 1.

@@ -66,7 +66,7 @@ prune: fclean
 
 # must stay at the end
 srcs/.env:
-	@echo "srcs/.env not found, \"cp srcs/.env.example srcs/.env\" and fill it in"
-	@exit 1
+	@cp srcs/.env.example srcs/.env
+	@echo "created srcs/.env from .env.example, check its values"
 
 .PHONY: all build up down stop start restart re logs ps status dirs secrets clean fclean prune host
