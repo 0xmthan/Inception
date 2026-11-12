@@ -17,7 +17,7 @@ services:
     networks:
       - inception
     healthcheck:
-      test: ["CMD-SHELL", "mariadb --protocol=socket -u root -p\"$$(cat /run/secrets/db_root_password)\" -e 'SELECT 1' >/dev/null 2>&1"]
+      test: ["CMD-SHELL", "mariadb --protocol=tcp -h 127.0.0.1 -P 3306 -u \"$$MYSQL_USER\" -p\"$$(cat /run/secrets/db_password)\" -e 'SELECT 1' >/dev/null 2>&1"]
       interval: 5s
       timeout: 5s
       retries: 12

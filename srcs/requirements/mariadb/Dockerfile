@@ -4,11 +4,10 @@ RUN apk add --no-cache \
         mariadb \
         mariadb-client
 
-COPY conf/zz-inception.cnf /etc/my.cnf.d/zz-inception.cnf
-COPY tools/entrypoint.sh /usr/local/bin/entrypoint.sh
+COPY --chmod=644 conf/zz-inception.cnf /etc/my.cnf.d/zz-inception.cnf
+COPY --chmod=755 tools/entrypoint.sh /usr/local/bin/entrypoint.sh
 
-RUN chmod +x /usr/local/bin/entrypoint.sh \
-    && mkdir -p /run/mysqld /var/lib/mysql \
+RUN mkdir -p /run/mysqld /var/lib/mysql \
     && chown -R mysql:mysql /run/mysqld /var/lib/mysql
 
 EXPOSE 3306
